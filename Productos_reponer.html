@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POS - Inventario | Productos a Reponer</title>
+
+<!-- Bootstrap 5 + Iconos -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+/* ===== Fondo general ===== */
+body {
+  background: linear-gradient(135deg, #eef2f3, #dfe9f3);
+  font-family: 'Segoe UI', sans-serif;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== Título principal ===== */
+h2 {
+  font-weight: 800;
+  color: #0d6efd;
+  text-align: center;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+.subtitulo {
+  text-align: center;
+  color: #6c757d;
+  font-size: 1rem;
+  margin-bottom: 40px;
+}
+
+/* ===== Contenedor ===== */
+.container {
+  max-width: 1200px;
+}
+
+/* ===== Tarjetas ===== */
+#tabla-reponer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+}
+
+.card-producto {
+  background: #fff;
+  border: none;
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  padding: 20px;
+  transition: all 0.35s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-producto:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.15);
+}
+
+/* ===== Encabezado de tarjeta ===== */
+.card-producto h5 {
+  font-weight: 700;
+  color: #212529;
+}
+.card-producto p {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+/* ===== Etiquetas de stock ===== */
+.stock-badge {
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.stock-bajo { background-color: #dc3545; color: white; }
+.stock-medio { background-color: #fd7e14; color: white; }
+.stock-bueno { background-color: #198754; color: white; }
+
+/* ===== Botón de reposición ===== */
+.btn-reponer {
+  border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all 0.3s;
+  background-color: #0d6efd;
+  border: none;
+}
+.btn-reponer:hover {
+  transform: scale(1.05);
+  background-color: #0b5ed7;
+}
+
+/* ===== Botón Salir ===== */
+.btn-salir {
+  position: fixed;
+  top: 20px;
+  right: 25px;
+  background-color: #dc3545;
+  color: white;
+  padding: 12px 22px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  transition: all 0.3s ease;
+  z-index: 999;
+}
+.btn-salir:hover {
+  background-color: #b02a37;
+  transform: translateY(-2px);
+}
+
+/* ===== Alertas flotantes ===== */
+.alerta {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 14px 22px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  z-index: 2000;
+  animation: fadeInOut 4s ease forwards;
+}
+.alerta-danger { background-color: #dc3545; }
+.alerta-warning { background-color: #ffc107; color: #000; }
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-20px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-20px); }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Botón Salir (sin icono) -->
+<a href="C:\Users\kioskUser0\Downloads\PuntoVenta\dashboard.html" class="btn-salir">Salir</a>
+
+<!-- Contenido principal -->
+<div class="container py-5">
+  <h2><i class="bi bi-box-seam"></i> Inventario - Productos a Reponer</h2>
+  <p class="subtitulo">Supervisa los productos con bajo stock y actúa antes de que se agoten</p>
+
+  <div id="tabla-reponer">
+    <div class="text-center text-muted w-100">Cargando productos...</div>
+  </div>
+</div>
+
+<!-- Script -->
+<script>
+async function cargarProductosReponer() {
+  try {
+    const respuesta = await fetch('get_productos_reponer.php');
+    const productos = await respuesta.json();
+    const contenedor = document.getElementById('tabla-reponer');
+    contenedor.innerHTML = '';
+
+    if (productos.length === 0) {
+      contenedor.innerHTML = `<div class="text-center text-muted w-100">✅ No hay productos para reponer. El inventario está en orden.</div>`;
+      return;
+    }
+
+    productos.forEach(prod => {
+      let stockClass = 'stock-bajo';
+      if (prod.stock >= 10 && prod.stock < 30) stockClass = 'stock-medio';
+      if (prod.stock >= 30) stockClass = 'stock-bueno';
+
+      const tarjeta = document.createElement('div');
+      tarjeta.classList.add('card-producto');
+      tarjeta.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold text-secondary"><i class="bi bi-upc-scan"></i> ${prod.id}</span>
+          <span class="stock-badge ${stockClass}"><i class="bi bi-bar-chart"></i> ${prod.stock}</span>
+        </div>
+        <h5>${prod.nombre}</h5>
+        <p class="text-muted"><i class="bi bi-tags"></i> ${prod.categoria}</p>
+        <button class="btn btn-reponer w-100">
+          <i class="bi bi-plus-circle"></i> Reponer Stock
+        </button>
+      `;
+      contenedor.appendChild(tarjeta);
+
+      if (prod.stock === 0) {
+        mostrarAlerta(`⚠️ "${prod.nombre}" está agotado.`, "danger");
+      } else if (prod.stock <= 5) {
+        mostrarAlerta(`🔴 "${prod.nombre}" casi se agota (Stock: ${prod.stock}).`, "warning");
+      }
+    });
+  } catch (error) {
+    console.error("Error al cargar productos:", error);
+    document.getElementById('tabla-reponer').innerHTML =
+      `<div class="text-center text-danger w-100">Error al cargar los productos del inventario.</div>`;
+  }
+}
+
+function mostrarAlerta(mensaje, tipo) {
+  const alerta = document.createElement("div");
+  alerta.className = `alerta alerta-${tipo}`;
+  alerta.textContent = mensaje;
+  document.body.appendChild(alerta);
+  setTimeout(() => alerta.remove(), 4000);
+}
+
+document.addEventListener('DOMContentLoaded', cargarProductosReponer);
+</script>
+<div class="login-footer">© 2025 Punto de Venta | Todos los derechos reservados</div>
+    </div>
+</body>
+</html>
